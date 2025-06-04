@@ -1,20 +1,26 @@
 // src/App.tsx
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom'; // Added Navigate
 import './App.css';
 import AuthPage from './pages/auth/AuthPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { useAuth } from './contexts/AuthContext';
 import { USER_ROLES } from './config/roles';
-import GeneralDashboardPage from './pages/dashboard/GeneralDashboardPage'; // Import the new page
+import GeneralDashboardPage from './pages/dashboard/GeneralDashboardPage';
 
-// Placeholder Pages (from previous steps)
+// Sales Dashboard Pages
+import SalesDashboardPage from './pages/sales/SalesDashboardPage';
+import OpportunitiesPage from './pages/sales/OpportunitiesPage';
+import CustomersPage from './pages/sales/CustomersPage';
+import ProposalsPage from './pages/sales/ProposalsPage';
+import TargetsPage from './pages/sales/TargetsPage';
+import ReportsPage from './pages/sales/ReportsPage';
+
+
 const HomePage = () => {
   const { session, user, profile, signOut, userHasRole, isLoading } = useAuth();
-  // const navigate = useNavigate(); // Already imported in the outer scope if needed
 
   const handleSignOut = async () => {
     await signOut();
-    // Navigation is handled by ProtectedRoute/AuthPage logic based on session state
   };
 
   if (isLoading) {
@@ -59,7 +65,6 @@ const HomePage = () => {
   );
 };
 
-// This DashboardPage is a simpler one, distinct from GeneralDashboardPage
 const SimpleDashboardPage = () => {
   const { profile } = useAuth();
   return (
@@ -81,19 +86,25 @@ function App() {
         <nav className="bg-gradient-to-r from-sky-600 to-cyan-500 text-white p-4 shadow-md">
           <div className="container mx-auto flex justify-between items-center">
             <Link to="/" className="text-xl font-bold hover:opacity-90">Meu ERP</Link>
-            <ul className="flex space-x-4 items-center">
-              <li><Link to="/" className="hover:text-sky-200">Home</Link></li>
-              {!session && !isLoading && <li><Link to="/login" className="hover:text-sky-200">Login/Registrar</Link></li>}
+            <ul className="flex space-x-2 sm:space-x-4 items-center overflow-x-auto py-2"> {/* Added overflow-x-auto and py-2 */}
+              <li><Link to="/" className="hover:text-sky-200 whitespace-nowrap">Home</Link></li>
+              {!session && !isLoading && <li><Link to="/login" className="hover:text-sky-200 whitespace-nowrap">Login/Registrar</Link></li>}
 
-              {/* Link para um painel simples para qualquer usuário logado */}
-              {session && <li><Link to="/dashboard-usuario" className="hover:text-sky-200">Painel Usuário</Link></li>}
+              {session && <li><Link to="/dashboard-usuario" className="hover:text-sky-200 whitespace-nowrap">Painel Usuário</Link></li>}
 
-              {/* Link para o Painel Geral para roles específicas */}
               {userHasRole([USER_ROLES.DIRETORIA, USER_ROLES.ADMIN_GERAL]) && (
-                <li><Link to="/painel-geral" className="hover:text-sky-200">Painel Geral (Diretoria/Admin)</Link></li>
+                <li><Link to="/painel-geral" className="hover:text-sky-200 whitespace-nowrap">Painel Geral</Link></li>
+              )}
+              {userHasRole([
+                  USER_ROLES.USUARIO_DO_SETOR,
+                  USER_ROLES.GERENTE_DE_SETOR,
+                  USER_ROLES.DIRETORIA,
+                  USER_ROLES.ADMIN_GERAL
+                ]) && (
+                <li><Link to="/sales" className="hover:text-sky-200 whitespace-nowrap">Painel de Vendas</Link></li>
               )}
             </ul>
-            <div className="text-sm">
+            <div className="text-sm ml-2 whitespace-nowrap"> {/* Added ml-2 and whitespace-nowrap */}
               {isLoading ? 'Carregando...' : session && profile ? (
                 <span>{profile.full_name || user?.email} ({profile.role})</span>
               ) : !session ? 'Não conectado' : ''}
@@ -106,14 +117,21 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<AuthPage />} />
             <Route element={<ProtectedRoute />}>
-              {/* Painel simples acessível a qualquer usuário logado */}
               <Route path="/dashboard-usuario" element={<SimpleDashboardPage />} />
-
-              {/* Painel Geral - a própria página GeneralDashboardPage faz a checagem de role internamente */}
-              {/* Se quiséssemos proteger a rota em si para apenas roles específicas, precisaríamos de um ProtectedRoute aprimorado */}
               <Route path="/painel-geral" element={<GeneralDashboardPage />} />
+
+              {/* Sales Dashboard Routes */}
+              <Route path="/sales" element={<SalesDashboardPage />}>
+                {/* Default child route for /sales */}
+                <Route index element={<Navigate to="oportunidades" replace />} />
+                <Route path="oportunidades" element={<OpportunitiesPage />} />
+                <Route path="clientes" element={<CustomersPage />} />
+                <Route path="propostas" element={<ProposalsPage />} />
+                <Route path="metas" element={<TargetsPage />} /> {/* Access control within TargetsPage itself */}
+                <Route path="relatorios" element={<ReportsPage />} />
+              </Route>
+              {/* Add more protected routes here */}
             </Route>
-            {/* Adicionar mais rotas aqui */}
           </Routes>
         </main>
       </div>
